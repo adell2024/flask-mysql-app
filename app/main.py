@@ -10,7 +10,8 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 def health():
     """Health check endpoint."""
     try:
-        db.session.execute('SELECT 1')
+        # Query database to verify connection
+        Item.query.first()
         return jsonify({'status': 'ok', 'database': 'connected'}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
