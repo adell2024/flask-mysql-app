@@ -73,8 +73,8 @@ jobs:
       - name: Deploy avec docker-compose
         run: |
           docker compose down 2>/dev/null || true
-          docker compose up -d
-          sleep 8
+          docker compose up -d --build
+          sleep 12
           echo "✅ Conteneurs démarrés"
 
       - name: Health check
