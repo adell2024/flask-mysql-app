@@ -62,10 +62,10 @@ echo ""
 echo "▶ [5/5] Déploiement..."
 
 # Stop and remove existing containers
-docker-compose down 2>/dev/null || true
+docker compose down 2>/dev/null || true
 
 # Build and start services
-docker-compose up -d
+docker compose up -d
 
 echo "  En attente du démarrage (5s)..."
 sleep 5
