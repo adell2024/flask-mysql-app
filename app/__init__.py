@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask
 from app.database import db
 
@@ -21,7 +23,15 @@ def create_app(config=None):
     db.init_app(app)
     
     with app.app_context():
-        db.create_all()
+        # Retry database initialization until MySQL is ready.
+        for attempt in range(10):
+            try:
+                db.create_all()
+                break
+            except Exception:
+                if attempt == 9:
+                    raise
+                time.sleep(2)
         
     # Import and register blueprints
     from app.main import api_bp
