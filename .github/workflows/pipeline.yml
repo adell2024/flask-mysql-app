@@ -1,0 +1,110 @@
+name: Pipeline DevSecOps - Flask MySQL
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  pipeline:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfile
+        run: hadolint Dockerfile
+
+      - name: Scan secrets
+        run: gitleaks detect --source . --no-git --redact
+
+      - name: SAST Python
+        run: |
+          bandit -r app/ -f txt -ll
+          echo "✅ Aucune vulnérabilité critique Python"
+
+      - name: Tests unitaires
+        run: |
+          pip3 install -r requirements.txt --break-system-packages -q
+          python3 -m pytest tests/test_api.py -v \
+            --tb=short \
+            -k "test_health or test_create or test_get"
+          echo "✅ Tests unitaires OK"
+
+      - name: Tests intégration
+        run: |
+          python3 -m pytest tests/test_api.py -v \
+            --tb=short \
+            -k "test_delete or test_update or test_root"
+          echo "✅ Tests intégration OK"
+
+      - name: Build image Docker
+        run: |
+          VERSION=$(git rev-parse --short HEAD)
+          docker build -t flask-mysql-app:$VERSION .
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "✅ Image construite : flask-mysql-app:$VERSION"
+
+      - name: Scan CVE Trivy
+        run: |
+          trivy image \
+            --exit-code 1 \
+            --severity CRITICAL \
+            --no-progress \
+            flask-mysql-app:${{ env.VERSION }}
+          echo "✅ Aucune CVE critique"
+
+      - name: Générer SBOM
+        run: |
+          mkdir -p reports
+          syft flask-mysql-app:${{ env.VERSION }} -o table
+          syft flask-mysql-app:${{ env.VERSION }} -o spdx-json \
+            > reports/sbom-${{ env.VERSION }}.json
+          TOTAL=$(cat reports/sbom-${{ env.VERSION }}.json \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d['packages']))")
+          echo "✅ SBOM généré : $TOTAL composants"
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ env.VERSION }}
+          path: reports/sbom-${{ env.VERSION }}.json
+
+      - name: Deploy avec docker-compose
+        run: |
+          docker-compose down 2>/dev/null || true
+          docker-compose up -d
+          sleep 5
+          echo "✅ Conteneurs démarrés"
+
+      - name: Health check
+        run: |
+          curl -sf http://localhost:9002/api/health && echo "✅ /health OK"
+          curl -sf http://localhost:9002/api/ && echo "✅ / OK"
+
+      - name: DAST OWASP ZAP
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            --network host \
+            -v $(pwd)/reports:/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://localhost:9002 \
+            -r zap-report.html \
+            -J zap-report.json \
+            -I
+          echo "✅ Scan DAST terminé"
+
+      - name: Upload rapport DAST
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dast-report-${{ env.VERSION }}
+          path: |
+            reports/zap-report.html
+            reports/zap-report.json
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down
