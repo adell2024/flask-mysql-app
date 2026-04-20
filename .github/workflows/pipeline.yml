@@ -72,7 +72,12 @@ jobs:
 
       - name: Deploy avec docker-compose
         run: |
-          docker compose down 2>/dev/null || true
+          # Aggressive cleanup
+          docker compose down -v 2>/dev/null || true
+          docker container prune -f 2>/dev/null || true
+          sleep 2
+          
+          # Start fresh
           docker compose up -d
           sleep 5
           echo "✅ Conteneurs démarrés"

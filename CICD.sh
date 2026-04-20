@@ -61,8 +61,10 @@ echo "  ✅ Aucune vulnérabilité critique"
 echo ""
 echo "▶ [5/5] Déploiement..."
 
-# Stop and remove existing containers
-docker compose down 2>/dev/null || true
+# Aggressive cleanup
+docker compose down -v 2>/dev/null || true
+docker container prune -f 2>/dev/null || true
+sleep 2
 
 # Build and start services
 docker compose up -d
@@ -75,7 +77,7 @@ if curl -sf http://localhost:9002/api/health > /dev/null; then
   echo "  ✅ Application en ligne !"
 else
   echo "  ❌ L'application ne répond pas — rollback"
-  docker-compose down
+  docker compose down
   exit 1
 fi
 
