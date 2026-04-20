@@ -69,3 +69,15 @@ jobs:
         with:
           name: sbom-${{ env.VERSION }}
           path: reports/sbom-${{ env.VERSION }}.json
+
+      - name: Deploy avec docker-compose
+        run: |
+          docker compose down 2>/dev/null || true
+          docker compose up -d
+          sleep 8
+          echo "✅ Conteneurs démarrés"
+
+      - name: Health check
+        run: |
+          curl -sf http://localhost:9002/api/health && echo "✅ /health OK"
+          curl -sf http://localhost:9002/api/ && echo "✅ / OK"
