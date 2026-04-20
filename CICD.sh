@@ -61,16 +61,22 @@ echo "  ✅ Aucune vulnérabilité critique"
 echo ""
 echo "▶ [5/5] Déploiement..."
 
-# Aggressive cleanup
-docker compose down -v 2>/dev/null || true
-docker container prune -f 2>/dev/null || true
+# Kill any process on ports 3306 and 9002
+for port in 3306 9002; do
+  fuser -k $port/tcp 2>/dev/null || true
+done
+sleep 1
+
+# Aggressive container cleanup
+docker kill $(docker ps -q) 2>/dev/null || true
+docker system prune -f --volumes 2>/dev/null || true
 sleep 2
 
 # Build and start services
 docker compose up -d
 
-echo "  En attente du démarrage (5s)..."
-sleep 5
+echo "  En attente du démarrage (8s)..."
+sleep 8
 
 # Verify app is responding
 if curl -sf http://localhost:9002/api/health > /dev/null; then
