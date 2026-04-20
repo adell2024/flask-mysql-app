@@ -61,16 +61,13 @@ echo "  ✅ Aucune vulnérabilité critique"
 echo ""
 echo "▶ [5/5] Déploiement..."
 
-# Kill any process on ports 3306 and 9002
-for port in 3306 9002; do
-  fuser -k $port/tcp 2>/dev/null || true
-done
-sleep 1
-
-# Aggressive container cleanup
-docker kill $(docker ps -q) 2>/dev/null || true
-docker system prune -f --volumes 2>/dev/null || true
+# Clean up existing containers and networks
+docker compose down -v 2>/dev/null || true
 sleep 2
+
+# Kill any remaining process on port 9002
+fuser -k 9002/tcp 2>/dev/null || true
+sleep 1
 
 # Build and start services
 docker compose up -d
