@@ -79,7 +79,7 @@ def update_item(item_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Item updated successfully',
+            'message': 'Item updated ver successfully',
             'item': item.to_dict()
         }), 200
     except Exception as e:
