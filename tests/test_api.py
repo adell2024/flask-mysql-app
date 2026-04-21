@@ -10,11 +10,11 @@ def app():
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:'
     }
-    app = create_app(config=test_config)
-    
-    with app.app_context():
+    flask_app = create_app(config=test_config)
+
+    with flask_app.app_context():
         db.create_all()
-        yield app
+        yield flask_app
         db.session.remove()
         db.drop_all()
 
