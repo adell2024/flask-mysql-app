@@ -22,6 +22,9 @@ def create_app(config=None):
     
     db.init_app(app)
     
+    # Ensure model metadata is registered before creating tables.
+    import app.models  # noqa: F401
+    
     with app.app_context():
         # Retry database initialization until MySQL is ready.
         for attempt in range(10):
