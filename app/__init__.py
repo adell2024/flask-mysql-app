@@ -10,22 +10,22 @@ def create_app(config=None):
     Args:
         config (dict): Optional config dict to override default settings
     """
-    app = Flask(__name__)
+    flask_app = Flask(__name__)
     
     # Default configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://app_user:app_password@db:3306/app_db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    flask_app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://app_user:app_password@db:3306/app_db'
+    flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Override with custom config if provided
     if config:
-        app.config.update(config)
+        flask_app.config.update(config)
     
-    db.init_app(app)
+    db.init_app(flask_app)
     
     # Ensure model metadata is registered before creating tables.
-    import app.models  # noqa: F401
+    from app import models  # noqa: F401
     
-    with app.app_context():
+    with flask_app.app_context():
         # Retry database initialization until MySQL is ready.
         for attempt in range(10):
             try:
@@ -38,6 +38,6 @@ def create_app(config=None):
         
     # Import and register blueprints
     from app.main import api_bp
-    app.register_blueprint(api_bp)
+    flask_app.register_blueprint(api_bp)
     
-    return app
+    return flask_app
