@@ -20,6 +20,7 @@ services:
       - app-network
 
   app:
+    image: flask-mysql-app:${VERSION:-latest}
     build: .
     container_name: flask-mysql-app
     environment:
@@ -30,8 +31,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - .:/app
     networks:
       - app-network
     restart: unless-stopped
