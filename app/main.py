@@ -27,6 +27,14 @@ def get_all_items():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/items/search', methods=['GET'])
+def search_items():
+    """Search items by name."""
+    name = request.args.get('name', '')
+    if not name:
+        return jsonify({'error': 'name parameter is required'}), 400
+    items = Item.query.filter(Item.name.ilike(f'%{name}%')).all()
+    return jsonify([item.to_dict() for item in items]), 200
 
 @api_bp.route('/items/<int:item_id>', methods=['GET'])
 def get_item(item_id):
