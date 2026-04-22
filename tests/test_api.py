@@ -30,6 +30,28 @@ def runner(app):
     """A test runner for the app's CLI."""
     return app.test_cli_runner()
 
+# ── Search Items Tests ──────────────────────────────────────
+def test_search_items(client, app):
+    """Test searching items by name."""
+    with app.app_context():
+        item1 = Item(name='Apple pie', description='A delicious pie')
+        item2 = Item(name='Banana bread', description='A tasty bread')
+        item3 = Item(name='Apple juice', description='A fresh juice')
+        db.session.add_all([item1, item2, item3])
+        db.session.commit()
+
+    response = client.get('/api/items/search?name=Apple')
+    assert response.status_code == 200
+    results = response.json
+    assert len(results) == 2
+    assert all('Apple' in item['name'] for item in results)
+
+
+def test_search_items_missing_param(client):
+    """Test search without name parameter returns 400."""
+    response = client.get('/api/items/search')
+    assert response.status_code == 400
+    assert 'required' in response.json['error'].lower()
 
 # ── Health Check Tests ──────────────────────────────────────
 def test_health(client):
